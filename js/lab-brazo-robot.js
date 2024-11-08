@@ -13,6 +13,7 @@ const robot_controls = {
   claw_angle: 0,
   claw_separation: 10,
   auto_animate: true,
+  is_wireframe: false,
 }
 
 init();
@@ -25,6 +26,10 @@ loadArrow();
 brazo_robot = loadBrazoRobot()
 console.log(brazo_robot)
 console.log(brazo_robot.children)
+
+ambient = new THREE.AmbientLight(0x404040, 10)
+scene.add(ambient)
+
 scene.add(brazo_robot)
 
 
@@ -82,6 +87,10 @@ function init()
   gui_rotation.add(robot_controls, 'claw_separation', 0, 15).name('Separación pinza').listen()
   gui_rotation.add(robot_controls, 'auto_animate',true, false).name('Auto animar').listen()
   gui_rotation.open()
+
+  var gui_view = gui.addFolder('Vista')
+  gui_view.add(robot_controls, 'is_wireframe', true, false).name('Vista alambrica')
+  gui_view.open()
 }
 
 function loadArrow()
@@ -157,6 +166,15 @@ function loadCacharroEjemploPract2() {
   scene.add(cacharro);
 }
 
+function toggleWireframe(obj3d, wireframe_enabled) {
+  obj3d.traverse((child) => {
+      if(child.hasOwnProperty('material')) {
+        child.material.wireframe = wireframe_enabled
+      }
+    }
+  )
+}
+
 function loadBrazoRobot() {
 
   brazoRobot = new THREE.Object3D()
@@ -165,7 +183,9 @@ function loadBrazoRobot() {
   let planeGeo = new THREE.PlaneGeometry(1000, 1000, 1000, 32);
   let floor = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({color: 'grey'}));
   floor.rotateOnAxis(new THREE.Vector3(1,0,0), -Math.PI /2 )
-
+  floor.receiveShadow = true
+  floor.castShadow = true
+  
   scene.add(floor)
 
   material = new THREE.MeshNormalMaterial();
@@ -184,6 +204,11 @@ function loadBrazoRobot() {
   brazo.getObjectByName('articulacion').add(anteBrazo)
   
   brazoRobot.name = 'brazo_robot'
+
+  brazoRobot.traverse((object) => {
+    object.castShadow = true
+    object.receiveShadow = true
+  })
 
   return brazoRobot
   
@@ -437,6 +462,9 @@ function update()
     robot_controls.claw_angle = Math.max(sin_t * 220, -40)
     robot_controls.claw_separation = Math.max(sin_t * 15, 0)
   }
+
+  toggleWireframe(brazo_robot, robot_controls.is_wireframe)
+
   base = brazo_robot.getObjectByName('base', true)
   base.rotation.y = to_rad(robot_controls.base_angle)
 
